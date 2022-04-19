@@ -1,1 +1,256 @@
+OBJECT Table 50005 Employee Loan
+{
+  OBJECT-PROPERTIES
+  {
+    Date=14/03/22;
+    Time=00:54:48;
+    Modified=Yes;
+    Version List=;
+  }
+  PROPERTIES
+  {
+    OnInsert=BEGIN
+
+               IF "No." = '' THEN BEGIN
+                 HumanResSetup.GET;
+                 HumanResSetup.TESTFIELD("Employee Loan Nos.");
+                 NoSeriesMgt.InitSeries(HumanResSetup."Employee Loan Nos.",xRec."No. Series",0D,"No.","No. Series");
+               END;
+               InitHeader;
+             END;
+
+    OnModify=BEGIN
+
+               "Last Modified Date" := TODAY;
+               "Modified By" := USERID;
+             END;
+
+    OnDelete=BEGIN
+
+               TestStatusOpen();
+             END;
+
+    CaptionML=[ENU=Employee loan;
+               FRA=Prˆt salari‚];
+    LookupPageID=Page50006;
+    DrillDownPageID=Page50006;
+  }
+  FIELDS
+  {
+    { 1   ;   ;No.                 ;Code20        ;OnValidate=BEGIN
+
+                                                                IF "No." <> xRec."No." THEN BEGIN
+                                                                  HumanResSetup.GET;
+                                                                  NoSeriesMgt.TestManual(HumanResSetup."Employee Loan Nos.");
+                                                                  "No. Series" := '';
+                                                                END;
+                                                              END;
+
+                                                   DataClassification=ToBeClassified;
+                                                   CaptionML=[ENU=No.;
+                                                              FRA=Nø] }
+    { 2   ;   ;Employee No.        ;Code20        ;TableRelation=Employee;
+                                                   OnValidate=BEGIN
+                                                                Employee.GET("Employee No.");
+                                                                "Employee Name" := Employee."First Name" + ' ' + Employee."Last Name";
+                                                                TestStatusOpen();
+                                                              END;
+
+                                                   DataClassification=ToBeClassified;
+                                                   CaptionML=[ENU=Employee No.;
+                                                              FRA=Nø salari‚];
+                                                   NotBlank=Yes }
+    { 3   ;   ;Employee Name       ;Text100       ;DataClassification=ToBeClassified;
+                                                   CaptionML=[ENU=Employee Name;
+                                                              FRA=Nom du salari‚];
+                                                   Editable=No }
+    { 4   ;   ;Loan Type           ;Option        ;DataClassification=ToBeClassified;
+                                                   CaptionML=[ENU=Type;
+                                                              FRA=Type];
+                                                   OptionCaptionML=[ENU=Short term,Average term,Long term;
+                                                                    FRA=Court terme,Moyen terme, Long terme];
+                                                   OptionString=ShortTerm,AverageTerm,LongTerm }
+    { 5   ;   ;Loan Reason         ;Text100       ;DataClassification=ToBeClassified;
+                                                   CaptionML=[ENU=Reason;
+                                                              FRA=Motif] }
+    { 6   ;   ;Duration            ;Integer       ;OnValidate=BEGIN
+
+                                                                TESTFIELD(Duration);
+                                                                HumanResSetup.GET;
+                                                                HumanResSetup.TESTFIELD("Emp. Loan Duration Max");
+                                                                IF (Duration > HumanResSetup."Emp. Loan Duration Max") THEN
+                                                                  ERROR(Text001);
+                                                              END;
+
+                                                   DataClassification=ToBeClassified;
+                                                   CaptionML=[ENU=Duration (Months);
+                                                              FRA=Dur‚e (Mois)] }
+    { 7   ;   ;Loan Amount         ;Decimal       ;OnValidate=BEGIN
+
+                                                                TestStatusOpen();
+                                                                TESTFIELD("Document Date");
+
+                                                                IF "Currency Code" = '' THEN
+                                                                  "Loan Amount (LCY)" := "Loan Amount"
+                                                                ELSE
+                                                                  "Loan Amount (LCY)" := ROUND(
+                                                                      CurrExchRate.ExchangeAmtFCYToLCY(
+                                                                        "Document Date","Currency Code",
+                                                                        "Loan Amount","Currency Factor"));
+                                                              END;
+
+                                                   DataClassification=ToBeClassified;
+                                                   CaptionML=[ENU=Loan Amount;
+                                                              FRA=Montant demand‚] }
+    { 8   ;   ;Currency Code       ;Code10        ;TableRelation=Currency;
+                                                   OnValidate=BEGIN
+                                                                TestStatusOpen();
+
+                                                                "Currency Factor" := CurrExchRate.ExchangeRate("Document Date","Currency Code");
+                                                                VALIDATE("Loan Amount");
+                                                              END;
+
+                                                   DataClassification=ToBeClassified;
+                                                   CaptionML=[ENU=Currency Code;
+                                                              FRA=Code devise] }
+    { 9   ;   ;Document Date       ;Date          ;DataClassification=ToBeClassified;
+                                                   CaptionML=[ENU=Document Date;
+                                                              FRA=Date document] }
+    { 10  ;   ;External Document No.;Code35       ;DataClassification=ToBeClassified;
+                                                   CaptionML=[ENU=External Document No.;
+                                                              FRA=Nø doc. externe] }
+    { 11  ;   ;Status              ;Option        ;DataClassification=ToBeClassified;
+                                                   CaptionML=[ENU=Status;
+                                                              FRA=Statut];
+                                                   OptionCaptionML=[ENU=Open,Released,Pending Approval;
+                                                                    FRA=Ouvert,Lanc‚,Approbation suspendue];
+                                                   OptionString=Open,Released,Pending Approval;
+                                                   Editable=No }
+    { 12  ;   ;Create By           ;Code50        ;TableRelation=User;
+                                                   TestTableRelation=No;
+                                                   DataClassification=ToBeClassified;
+                                                   CaptionML=[ENU=Create By;
+                                                              FRA=Cr‚‚ par];
+                                                   Editable=No }
+    { 13  ;   ;Modified By         ;Code50        ;TableRelation=User;
+                                                   TestTableRelation=No;
+                                                   DataClassification=ToBeClassified;
+                                                   CaptionML=[ENU=Modified By;
+                                                              FRA=Modifi‚ par];
+                                                   Editable=No }
+    { 14  ;   ;Creation Date       ;Date          ;DataClassification=ToBeClassified;
+                                                   CaptionML=[ENU=Creation Date;
+                                                              FRA=Cr‚‚ le];
+                                                   Editable=No }
+    { 15  ;   ;Last Modified Date  ;Date          ;DataClassification=ToBeClassified;
+                                                   CaptionML=[ENU=Last Modified Date;
+                                                              FRA=Date derniŠre modif.];
+                                                   Editable=No }
+    { 16  ;   ;No. Series          ;Code20        ;TableRelation="No. Series";
+                                                   DataClassification=ToBeClassified;
+                                                   CaptionML=[ENU=No. Series;
+                                                              FRA=Souches de nø];
+                                                   Editable=No }
+    { 17  ;   ;Currency Factor     ;Decimal       ;DataClassification=ToBeClassified;
+                                                   CaptionML=[ENU=Currency Factor;
+                                                              FRA=Facteur devise];
+                                                   DecimalPlaces=0:15 }
+    { 18  ;   ;Loan Amount (LCY)   ;Decimal       ;DataClassification=ToBeClassified;
+                                                   CaptionML=[ENU=Amount (LCY);
+                                                              FRA=Montant DS];
+                                                   Editable=No }
+  }
+  KEYS
+  {
+    {    ;No.                                     ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+    VAR
+      HumanResSetup@100000001 : Record 5218;
+      NoSeriesMgt@100000000 : Codeunit 396;
+      Employee@100000002 : Record 5200;
+      Text001@100000003 : TextConst 'ENU=Duration must not exceed %1 months;FRA=La dur‚e ne doit pas exc‚der %1 mois';
+      Currency@100000004 : Record 4;
+      CurrExchRate@100000005 : Record 330;
+      Text002@100000007 : TextConst 'ENU=This document can only be released when the approval process is complete.;FRA=Ce document ne peut ˆtre lanc‚ que lorsque le processus d''approbation est termin‚.';
+      Text003@100000006 : TextConst 'ENU=The approval process must be cancelled or completed to reopen this document.;FRA=Le processus d''approbation doit ˆtre annul‚ ou termin‚ pour rouvrir ce document.';
+      ApprovalsMgmt@100000008 : Codeunit 1535;
+
+    PROCEDURE InitHeader@1120007();
+    BEGIN
+      "Document Date" := WORKDATE;
+      "Create By" := USERID;
+      "Creation Date" := TODAY;
+    END;
+
+    LOCAL PROCEDURE TestStatusOpen@134();
+    BEGIN
+
+      TESTFIELD(Status,Status::Open);
+    END;
+
+    PROCEDURE AssistEdit@1120002(OldEmpLoan@1120000 : Record 50005) : Boolean;
+    VAR
+      EmpLoan@100000000 : Record 50005;
+    BEGIN
+      WITH EmpLoan DO BEGIN
+        EmpLoan := Rec;
+        HumanResSetup.GET;
+
+        HumanResSetup.TESTFIELD("Employee Loan Nos.");
+        IF NoSeriesMgt.SelectSeries(HumanResSetup."Employee Loan Nos.",OldEmpLoan."No. Series","No. Series") THEN BEGIN
+
+          NoSeriesMgt.SetSeries("No.");
+          Rec := EmpLoan;
+          EXIT(TRUE);
+        END;
+      END;
+    END;
+
+    PROCEDURE PerformManualRelease@100000001();
+    BEGIN
+      IF ApprovalsMgmt.IsEmployeeLoanPendingApproval_AFK(Rec) THEN
+        ERROR(Text002);
+
+      IF Status = Status::Released THEN
+          EXIT;
+
+      TESTFIELD("Employee No.");
+      TESTFIELD("Loan Amount");
+      TESTFIELD(Duration);
+      TESTFIELD("Document Date");
+      Status := Status::Released;
+      MODIFY;
+    END;
+
+    PROCEDURE PerformManualReOpen@100000002();
+    BEGIN
+      IF Status = Status::"Pending Approval" THEN
+        ERROR(Text003);
+
+      IF Status = Status::Open THEN
+        EXIT;
+
+      Status := Status::Open;
+      MODIFY;
+    END;
+
+    PROCEDURE ReOpen@100000000();
+    BEGIN
+
+      IF Status = Status::Open THEN
+        EXIT;
+
+      Status := Status::Open;
+      MODIFY;
+    END;
+
+    BEGIN
+    END.
+  }
+}
 
